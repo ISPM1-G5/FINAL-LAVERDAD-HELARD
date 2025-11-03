@@ -1,0 +1,34 @@
+@extends('layouts.navigation')
+
+@section('content')
+<div class="container">
+    <h1>{{ $category->name }}</h1>
+    @if($category->description)
+        <p class="text-muted">{{ $category->description }}</p>
+    @endif
+
+    @if($articles->count())
+        <div class="row mt-3">
+            @foreach($articles as $a)
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        @if($a->featured_image)
+                            <img src="{{ asset('storage/' . $a->featured_image) }}" class="card-img-top" alt="{{ $a->title }}">
+                        @endif
+                        <div class="card-body">
+                            <h5 class="card-title"><a href="{{ route('public.articles.show', $a->slug) }}">{{ $a->title }}</a></h5>
+                            <p class="card-text">{{ Str::limit($a->excerpt ?? strip_tags($a->content), 120) }}</p>
+                            <small class="text-muted">By {{ $a->author->user->name ?? 'Unknown' }} • {{ $a->published_at?->format('M d, Y') }}</small>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        {{ $articles->links() }}
+    @else
+        <div class="alert alert-info">No articles in this category yet.</div>
+    @endif
+</div>
+@endsection
+
+
