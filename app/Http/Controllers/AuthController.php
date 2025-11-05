@@ -42,6 +42,24 @@ class AuthController extends Controller
         ]);
     }
 
+    public function loginApi(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (Auth::attempt($request->only('email', 'password'))) {
+            $user = Auth::user();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json(['token' => $token]);
+        }
+
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+
+
     public function showRegistrationForm()
     {
         return view('auth.register');
@@ -76,6 +94,24 @@ class AuthController extends Controller
         Auth::login($user);
 
         return redirect('/dashboard')->with('success', 'Registration successful. Welcome!');
+    }
+
+    public function registerApi(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|min:8',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'subscriber',
+        ]);
+
+        return response()->json(['message' => 'Registration successful'], 201);
     }
 
     public function logout(Request $request)

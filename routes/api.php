@@ -13,8 +13,11 @@ use App\Http\Controllers\DraftController;
 use App\Http\Controllers\UserController;
 use App\Models\Category;
 use App\Models\Article;
+use App\Http\Controllers\AuthController;
 
 // Public API Routes
+Route::post('/login', [AuthController::class, 'loginApi']);
+Route::post('/register', [AuthController::class, 'registerApi']);
 Route::get('/categories', function () {
     return Category::orderBy('name')->get();
 });

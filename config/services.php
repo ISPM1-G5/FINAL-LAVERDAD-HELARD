@@ -35,4 +35,6 @@ return [
         ],
     ],
 
+    'school_domain' => env('SCHOOL_DOMAIN'),
+
 ];
