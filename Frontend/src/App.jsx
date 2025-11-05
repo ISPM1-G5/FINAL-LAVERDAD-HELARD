@@ -1,39 +1,21 @@
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
+import HomePage from './pages/HomePage';
+import Login from './components/Login';
+import Register from './components/Register';
+import ForgotPasswordPage from './authentication/ForgotPasswordPage';
 import './App.css';
 
 export default function App() {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetch('/api/categories')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setCategories(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        setError(error);
-        setLoading(false);
-      });
-  }, []);
-
   return (
-    <>
-      <h1>Categories</h1>
-      {loading && <p>Loading...</p>}
-      {error && <p>Error: {error.message}</p>}
-      <ul>
-        {categories.map(category => (
-          <li key={category.id}>{category.name}</li>
-        ))}
-      </ul>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      </Routes>
+    </Router>
   );
 }
