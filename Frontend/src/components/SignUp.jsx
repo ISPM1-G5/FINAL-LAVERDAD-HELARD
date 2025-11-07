@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function RegisterComponent() {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +24,7 @@ function RegisterComponent() {
     }
 
     try {
-      await axios.post('http://127.0.0.1:8000/api/register', { name, email, password });
+      await axios.post('/api/register', { name, email, password, password_confirmation: confirmPassword });
       setSuccess('Registration successful! Redirecting to home page...');
       setName('');
       setEmail('');
@@ -31,8 +33,14 @@ function RegisterComponent() {
       setTimeout(() => {
         window.location.href = '/home';
       }, 2000);
-    } catch {
-      setError('Registration failed. Please try again.');
+    } catch (error) {
+      if (error.response && error.response.data.errors) {
+        const errors = error.response.data.errors;
+        const firstError = Object.values(errors)[0][0];
+        setError(firstError);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     }
   };
 
@@ -189,9 +197,13 @@ function RegisterComponent() {
         {/* Sign In Link */}
         <p className="text-sm text-center text-gray-600">
           Have an account?{' '}
-          <a href="/login" className="font-medium text-blue-600 hover:underline">
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="font-medium text-blue-600 hover:underline"
+          >
             Sign In
-          </a>
+          </button>
         </p>
       </div>
     </div>

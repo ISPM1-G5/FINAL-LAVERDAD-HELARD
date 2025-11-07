@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 export default function Register() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -24,15 +25,23 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('/api/register', formData);
+      const response = await axios.post('/api/register', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+      });
       // Handle success (e.g., store token, redirect)
       console.log('Registration successful:', response.data);
-      window.location.href = '/login';
+      navigate('/login');
     } catch (error) {
       if (error.response && error.response.data.errors) {
         setErrors(error.response.data.errors);
+      } else if (error.response && error.response.data.message) {
+        setErrors({ general: error.response.data.message });
       } else {
         console.error('Registration failed:', error);
+        setErrors({ general: 'Registration failed. Please try again.' });
       }
     }
   };
@@ -153,7 +162,14 @@ export default function Register() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Already have an account? <Link to="/login" className="text-blue-600 hover:text-blue-500">Sign in</Link>
+            Already have an account?{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="text-blue-600 hover:text-blue-500"
+            >
+              Sign in
+            </button>
           </p>
         </div>
       </div>

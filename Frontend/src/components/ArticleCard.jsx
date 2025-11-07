@@ -1,67 +1,49 @@
-import React from 'react';
-
-const formatDateTime = (dateString) => {
-  if (!dateString) return '';
-  const options = {
-    year: 'numeric',
-    month: 'long', // 'long' for "September"
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  };
-  return new Date(dateString).toLocaleString('en-US', options);
-};
-
-const categoryStyles = {
-  NEWS: 'text-blue-600',
-  LIFESTYLE: 'text-purple-600',
-  'SOCIAL WORK': 'text-green-600',
-  DEFAULT: 'text-gray-600',
-};
-
-function ArticleCard({ category, title, author, date, imageUrl, excerpt = '' }) {
-  const categoryClass =
-    categoryStyles[category.toUpperCase()] || categoryStyles.DEFAULT;
+export default function ArticleCard({ article }) {
+  // Dummy data if no prop is passed
+  const {
+    imageUrl = "/placeholder-image.png",
+    category = "Literary",
+    date = "October 27, 2025 | 7:50 PM",
+    title = "The Ones Who Light Our Path",
+    snippet = "The room was silent, except for the sound of our heavy light which our predictor...",
+    author = "Heinrich Tapawan",
+  } = article || {};
 
   return (
-    <div className="transform rounded-lg bg-white shadow-md transition-shadow duration-300 hover:shadow-lg overflow-hidden">
-      {/* 1. Article Image */}
-      <div className="w-full h-50 overflow-hidden">
-        <img
-          src={imageUrl || 'https://via.placeholder.com/400x200'} // Use placeholder if no image
-          alt={title}
-          className="h-full w-full object-cover"
-        />
-      </div>
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+      {/* Article Image */}
+      <img
+        className="w-full h-40 object-cover"
+        src={imageUrl}
+        alt={title}
+      />
 
-      {/* 2. Content Area */}
-      <div className="p-4 text-left">
-        {/* 3. Metadata (Category & Date) */}
-        <div className="mb-2 flex items-center justify-between text-xs text-gray-500">
-          <span className={`font-semibold uppercase ${categoryClass}`}>
+      {/* Article Content */}
+      <div className="p-4 flex flex-col flex-grow">
+        <div className="flex justify-between items-center mb-2">
+          {/* Category Tag */}
+          <span className="text-xs font-semibold text-blue-800 bg-blue-100 px-2 py-1 rounded-full uppercase">
             {category}
           </span>
-          <span>{formatDateTime(date)}</span>
+          {/* Date */}
+          <span className="text-xs text-gray-500">{date}</span>
         </div>
 
-        {/* 4. Title */}
-        <h3 className="mb-2 text-md font-bold leading-snug text-gray-800">
+        {/* Title */}
+        <h3 className="text-lg font-bold text-gray-900 hover:text-blue-700 cursor-pointer">
           {title}
         </h3>
 
-        {/* 5. Excerpt */}
-        <p className="mb-3 text-sm text-gray-600 line-clamp-3">
-          {excerpt}
+        {/* Snippet */}
+        <p className="text-sm text-gray-600 mt-2 flex-grow">
+          "{snippet}"
         </p>
 
-        {/* 6. Author */}
-        <p className="text-xs text-gray-500 italic">
+        {/* Author */}
+        <p className="text-sm font-medium text-gray-800 mt-4">
           {author}
         </p>
       </div>
     </div>
   );
 }
-
-export default ArticleCard;

@@ -8,6 +8,7 @@ import EmptyState from '../components/EmptyState';
 import Navigation from '../components/HeaderLink';
 
 
+
 // Placeholder data for the articles
 const newsArticles = [
   { id: 1, img: 'https://via.placeholder.com/300x200?text=News+1', title: 'DOST-TAPI presents pre-com, com assistance programs to ...', excerpt: 'Technology Application and Promotion Institute...', category: 'News' },
@@ -34,7 +35,7 @@ export default function HomePage() {
         <LatestSection />
 
         {/* --- News Section --- */}
-        <ContentSection title="NEWS" bgColor="bg-blue-600">
+        <ContentSection title="NEWS" bgColor="bg-blue-600" viewAllUrl="/#/category/news">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
             {newsArticles.map(article => (
               <ArticleCard 
@@ -49,7 +50,7 @@ export default function HomePage() {
         </ContentSection>
 
         {/* --- Literary Section --- */}
-        <ContentSection title="LITERARY" bgColor="bg-green-600">
+        <ContentSection title="LITERARY" bgColor="bg-green-600" viewAllUrl="/#/category/literary">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
             {literaryArticles.map(article => (
               <ArticleCard 
@@ -63,7 +64,7 @@ export default function HomePage() {
         </ContentSection>
 
         {/* --- Specials Section --- */}
-        <ContentSection title="SPECIALS" bgColor="bg-purple-600">
+        <ContentSection title="SPECIALS" bgColor="bg-purple-600" viewAllUrl="/#/category/specials">
           {/* You can map over 'specials' articles here just like the sections above */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
              {/* Add ArticleCard components here */}
@@ -72,7 +73,7 @@ export default function HomePage() {
         </ContentSection>
 
         {/* --- Opinion Section --- */}
-        <ContentSection title="OPINION" bgColor="bg-gray-700">
+        <ContentSection title="OPINION" bgColor="bg-gray-700" viewAllUrl="/#/category/opinion">
            <div className="mt-4">
              {/* Add Opinion cards here */}
              <p className="text-gray-500">Opinion articles would go here...</p>
@@ -80,7 +81,7 @@ export default function HomePage() {
         </ContentSection>
         
         {/* --- Art Section --- */}
-        <ContentSection title="ART" bgColor="bg-indigo-500">
+        <ContentSection title="ART" bgColor="bg-indigo-500" viewAllUrl="/#/category/art">
            <div className="mt-4">
              {/* Add Art cards here */}
              <p className="text-gray-500">Art pieces would go here...</p>
@@ -88,12 +89,12 @@ export default function HomePage() {
         </ContentSection>
 
         {/* --- Features Section --- */}
-        <ContentSection title="FEATURES" bgColor="bg-yellow-500">
+        <ContentSection title="FEATURES" bgColor="bg-yellow-500" viewAllUrl="/#/category/features">
            <EmptyState categoryName="Features" />
         </ContentSection>
 
         {/* --- Sports Section --- */}
-        <ContentSection title="SPORTS" bgColor="bg-red-600">
+        <ContentSection title="SPORTS" bgColor="bg-red-600" viewAllUrl="/#/category/sports">
            <EmptyState categoryName="Sports" />
         </ContentSection>
 

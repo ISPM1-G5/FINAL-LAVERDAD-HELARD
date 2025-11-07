@@ -23,7 +23,7 @@ function Footer() {
 
   return (
     <footer 
-      className="text-slate-200"
+      className="text-slate-200 justify-center"
       style={{
         backgroundImage: `linear-gradient(to bottom, rgba(6, 182, 212, 0.8), rgba(0, 0, 0, 0.9)), url(${Bgfooter})`,
         backgroundSize: 'cover',

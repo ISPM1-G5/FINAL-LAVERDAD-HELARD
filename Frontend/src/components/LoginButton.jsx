@@ -5,7 +5,7 @@ const LoginButton = () => {
   return (
     <Link
       to="/login"
-      className="w-40 px-12 py-3 bg-cyan-800 hover:bg-cyan-900 text-white font-medium rounded-lg shadow transition duration-150"
+      className="w-40 uspx-12 py-3 bg-cyan-800 hover:bg-cyan-900 text-white font-medium rounded-lg shadow transition duration-150"
     >
       Log In
     </Link>

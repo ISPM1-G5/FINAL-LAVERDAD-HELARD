@@ -25,12 +25,12 @@ export default function Hero() {
           >
             Log In
           </Link>
-          <button
-            onClick={() => toggleModal('registerModal')}
+          <Link
+            to="/register"
             className="px-10 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded shadow transition duration-150"
           >
             Sign Up
-          </button>
+          </Link>
         </div>
       </div>
     </section>

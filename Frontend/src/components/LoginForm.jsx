@@ -11,11 +11,15 @@ function LoginComponent() {
     setError('');
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/login', { email, password });
-      localStorage.setItem('token', response.data.token);
+      const response = await axios.post('/api/login', { email, password });
+      localStorage.setItem('auth_token', response.data.token);
       window.location.href = '/home';
-    } catch {
-      setError('Invalid credentials. Please try again.');
+    } catch (error) {
+      if (error.response && error.response.data.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Invalid credentials. Please try again.');
+      }
     }
   };
 
