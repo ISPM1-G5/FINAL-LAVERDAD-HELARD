@@ -200,4 +200,34 @@ class ArticleController extends Controller
 
         return back()->with('success', 'Article shared!');
     }
+
+    public function getLikedArticles(Request $request)
+    {
+        $perPage = $request->get('per_page', 10);
+        $page = $request->get('page', 1);
+
+        $articles = Article::whereHas('interactions', function ($query) {
+            $query->where('user_id', Auth::id())
+                  ->where('type', 'liked');
+        })
+        ->with('author.user', 'categories', 'tags')
+        ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json($articles);
+    }
+
+    public function getSharedArticles(Request $request)
+    {
+        $perPage = $request->get('per_page', 10);
+        $page = $request->get('page', 1);
+
+        $articles = Article::whereHas('interactions', function ($query) {
+            $query->where('user_id', Auth::id())
+                  ->where('type', 'shared');
+        })
+        ->with('author.user', 'categories', 'tags')
+        ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json($articles);
+    }
 }

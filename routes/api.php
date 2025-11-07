@@ -32,8 +32,30 @@ Route::get('/latest-articles', function () {
 
 // API Routes with Sanctum authentication
 Route::middleware('auth:sanctum')->group(function () {
+    // User API
+    Route::get('/user', function (Request $request) {
+        return response()->json($request->user())
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    });
+
+    // Logout API
+    Route::post('/logout', [AuthController::class, 'logoutApi']);
+
+    // Change Password API
+    Route::post('/change-password', [AuthController::class, 'changePasswordApi']);
+
+    // Delete Account API
+    Route::post('/delete-account', [AuthController::class, 'deleteAccountApi']);
+
     // Articles API
     Route::apiResource('articles', ArticleController::class);
+
+    // User liked and shared articles
+    Route::get('/user/liked-articles', [ArticleController::class, 'getLikedArticles']);
+    Route::get('/user/shared-articles', [ArticleController::class, 'getSharedArticles']);
 
     // Categories API
     Route::apiResource('categories', CategoryController::class);
