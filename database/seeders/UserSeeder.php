@@ -29,5 +29,21 @@ class UserSeeder extends Seeder
             'password' => Hash::make('admin123'),
             'role' => 'admin',
         ]);
+
+        // Create a moderator user
+        User::create([
+            'name' => 'Moderator User',
+            'email' => 'moderator@example.com',
+            'password' => Hash::make('moderator123'),
+            'role' => 'moderator',
+        ]);
+
+        // Create an author user
+        User::create([
+            'name' => 'Author User',
+            'email' => 'author@example.com',
+            'password' => Hash::make('author123'),
+            'role' => 'author',
+        ]);
     }
 }

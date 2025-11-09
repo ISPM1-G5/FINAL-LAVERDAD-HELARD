@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: Laverdad-herald
+    env: php
+    plan: free # Or your desired plan
+    buildCommand: |
+      composer install --no-dev --no-interaction --no-plugins --no-scripts --prefer-dist
+      php artisan migrate --force
+      # Build frontend assets
+      cd Frontend
+      npm install
+      npm run build
+      # Copy frontend assets to public directory
+      cp -a dist/. ../public/
+      cd ..
+    startCommand: php artisan serve --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_URL
+        value: https://your-render-app-url.onrender.com
+      - key: APP_KEY
+        generateValue: true
+      - key: DB_CONNECTION
+        value: pgsql # or mysql
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: Herald-database
+          property: host
+      - key: DB_PORT
+        fromService:
+          type: pserv
+          name: Herald-database
+          property: port
+      - key: DB_DATABASE
+        fromService:
+          type: pserv
+          name: Herald-database
+          property: database
+      - key: DB_USERNAME
+        fromService:
+          type: pserv
+          name: Herald-database
+          property: user
+      - key: DB_PASSWORD
+        fromService:
+          type: pserv
+          name: Herald-database
+          property: password
+
+  - type: pserv
+    name: Herald-database
+    env: postgres # or mysql
+    plan: free # Or your desired plan
+    disk:
+      name: my-database-disk
+      sizeGB: 1

@@ -45,14 +45,14 @@ class AuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json(['token' => $token])
-            ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
         }
 
         return response()->json(['message' => 'Invalid credentials'], 401)
-            ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -101,7 +101,7 @@ class AuthController extends Controller
         ]);
 
         return response()->json(['message' => 'Registration successful'], 201)
-            ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -123,7 +123,7 @@ class AuthController extends Controller
         $request->user()->tokens()->where('id', $request->user()->currentAccessToken()->id)->delete();
 
         return response()->json(['message' => 'Logged out successfully'])
-            ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -141,7 +141,7 @@ class AuthController extends Controller
         // Check if current password is correct
         if (!Hash::check($request->current_password, $user->password)) {
             return response()->json(['message' => 'Current password is incorrect'], 400)
-                ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
                 ->header('Access-Control-Allow-Credentials', 'true')
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
                 ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -152,7 +152,7 @@ class AuthController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Password changed successfully'])
-            ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -169,7 +169,7 @@ class AuthController extends Controller
         // Check if password is correct
         if (!Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Password is incorrect'], 400)
-                ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
                 ->header('Access-Control-Allow-Credentials', 'true')
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
                 ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -193,7 +193,7 @@ class AuthController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'Account deleted successfully'])
-            ->header('Access-Control-Allow-Origin', 'http://localhost:5175')
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
