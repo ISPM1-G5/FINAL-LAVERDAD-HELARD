@@ -59,4 +59,42 @@ class User extends Authenticatable
     {
         return $this->role === $role;
     }
+
+    /**
+     * Check if the user is a moderator.
+     *
+     * @return bool
+     */
+    public function isModerator(): bool
+    {
+        return $this->role === 'moderator';
+    }
+
+    /**
+     * Check if the user is an admin.
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if the user is an author.
+     *
+     * @return bool
+     */
+    public function isAuthor(): bool
+    {
+        return $this->role === 'author';
+    }
+
+    /**
+     * Get the author associated with the user.
+     */
+    public function author()
+    {
+        return $this->hasOne(Author::class);
+    }
 }

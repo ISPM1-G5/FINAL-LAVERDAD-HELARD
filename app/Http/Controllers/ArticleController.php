@@ -13,9 +13,28 @@ use Illuminate\Support\Str;
 
 class ArticleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $articles = Article::with('author.user', 'categories', 'tags')->paginate(10);
+        $query = Article::with('author.user', 'categories', 'tags');
+
+        // Filter by category if provided
+        if ($request->has('category') && $request->category) {
+            $query->whereHas('categories', function ($q) use ($request) {
+                $q->where('name', $request->category);
+            });
+        }
+
+        // Filter by limit if provided
+        $limit = $request->get('limit', 10);
+        if ($request->has('limit')) {
+            $articles = $query->paginate($limit);
+        } else {
+            $articles = $query->paginate(10);
+        }
+
+        if (request()->wantsJson()) {
+            return response()->json($articles);
+        }
         return view('articles.index', compact('articles'));
     }
 
@@ -75,11 +94,17 @@ class ArticleController extends Controller
             'new_values' => $article->toArray(),
         ]);
 
+        if (request()->wantsJson()) {
+            return response()->json($article->load('author.user', 'categories', 'tags'), 201);
+        }
         return redirect()->route('articles.index')->with('success', 'Article created successfully.');
     }
 
     public function show(Article $article)
     {
+        if (request()->wantsJson()) {
+            return response()->json($article->load('author.user', 'categories', 'tags'));
+        }
         return view('articles.show', compact('article'));
     }
 
@@ -146,6 +171,9 @@ class ArticleController extends Controller
             'new_values' => $article->toArray(),
         ]);
 
+        if (request()->wantsJson()) {
+            return response()->json($article->load('author.user', 'categories', 'tags'));
+        }
         return redirect()->route('articles.index')->with('success', 'Article updated successfully.');
     }
 
@@ -163,6 +191,9 @@ class ArticleController extends Controller
             'old_values' => $oldValues,
         ]);
 
+        if (request()->wantsJson()) {
+            return response()->json(['message' => 'Article deleted successfully']);
+        }
         return redirect()->route('articles.index')->with('success', 'Article deleted successfully.');
     }
 
@@ -213,7 +244,11 @@ class ArticleController extends Controller
         ->with('author.user', 'categories', 'tags')
         ->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($articles);
+        return response()->json($articles)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function getSharedArticles(Request $request)
@@ -228,6 +263,10 @@ class ArticleController extends Controller
         ->with('author.user', 'categories', 'tags')
         ->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($articles);
+        return response()->json($articles)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 }

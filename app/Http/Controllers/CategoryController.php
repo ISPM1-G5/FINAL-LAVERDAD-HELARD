@@ -12,7 +12,15 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::paginate(10);
+        if (auth()->check()) {
+            $categories = Category::paginate(10);
+        } else {
+            $categories = Category::orderBy('name')->get();
+        }
+
+        if (request()->wantsJson()) {
+            return response()->json($categories);
+        }
         return view('categories.index', compact('categories'));
     }
 
@@ -41,11 +49,17 @@ class CategoryController extends Controller
             'new_values' => $category->toArray(),
         ]);
 
+        if (request()->wantsJson()) {
+            return response()->json($category, 201);
+        }
         return redirect()->route('categories.index')->with('success', 'Category created successfully.');
     }
 
     public function show(Category $category)
     {
+        if (request()->wantsJson()) {
+            return response()->json($category);
+        }
         return view('categories.show', compact('category'));
     }
 
@@ -92,6 +106,9 @@ class CategoryController extends Controller
             'new_values' => $category->toArray(),
         ]);
 
+        if (request()->wantsJson()) {
+            return response()->json($category);
+        }
         return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
     }
 
@@ -109,6 +126,9 @@ class CategoryController extends Controller
             'old_values' => $oldValues,
         ]);
 
+        if (request()->wantsJson()) {
+            return response()->json(['message' => 'Category deleted successfully']);
+        }
         return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
     }
 }

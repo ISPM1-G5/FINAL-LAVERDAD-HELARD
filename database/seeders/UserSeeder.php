@@ -15,35 +15,43 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create a test user for login testing
-        User::create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => Hash::make('password123'),
-            'role' => 'subscriber',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => Hash::make('password123'),
+                'role' => 'subscriber',
+            ]
+        );
 
         // Create an admin user
-        User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('admin123'),
-            'role' => 'admin',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('admin123'),
+                'role' => 'admin',
+            ]
+        );
 
         // Create a moderator user
-        User::create([
-            'name' => 'Moderator User',
-            'email' => 'moderator@example.com',
-            'password' => Hash::make('moderator123'),
-            'role' => 'moderator',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'moderator@example.com'],
+            [
+                'name' => 'Moderator User',
+                'password' => Hash::make('moderator123'),
+                'role' => 'moderator',
+            ]
+        );
 
         // Create an author user
-        User::create([
-            'name' => 'Author User',
-            'email' => 'author@example.com',
-            'password' => Hash::make('author123'),
-            'role' => 'author',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'author@example.com'],
+            [
+                'name' => 'Author User',
+                'password' => Hash::make('author123'),
+                'role' => 'author',
+            ]
+        );
     }
 }

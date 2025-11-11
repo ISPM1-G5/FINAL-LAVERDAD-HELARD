@@ -18,9 +18,7 @@ use App\Http\Controllers\AuthController;
 // Public API Routes
 Route::post('/login', [AuthController::class, 'loginApi']);
 Route::post('/register', [AuthController::class, 'registerApi']);
-Route::get('/categories', function () {
-    return Category::orderBy('name')->get();
-});
+Route::get('/categories', [CategoryController::class, 'index']);
 
 Route::get('/latest-articles', function () {
     return Article::published()
@@ -58,7 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/shared-articles', [ArticleController::class, 'getSharedArticles']);
 
     // Categories API
-    Route::apiResource('categories', CategoryController::class);
+    Route::post('/categories', [CategoryController::class, 'store']);
+    Route::get('/categories/{category}', [CategoryController::class, 'show']);
+    Route::put('/categories/{category}', [CategoryController::class, 'update']);
+    Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
     // Tags API
     Route::apiResource('tags', TagController::class);
