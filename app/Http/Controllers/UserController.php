@@ -98,4 +98,104 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
+
+    public function getModerators()
+    {
+        $moderators = User::where('role', 'moderator')->get();
+        return response()->json($moderators)
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    public function addModerator(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            // Create new user if doesn't exist
+            $user = User::create([
+                'name' => explode('@', $request->email)[0],
+                'email' => $request->email,
+                'password' => Hash::make('password123'), // Default password
+                'role' => 'moderator',
+            ]);
+
+            Log::create([
+                'user_id' => Auth::id(),
+                'action' => 'created',
+                'model_type' => 'User',
+                'model_id' => $user->id,
+                'new_values' => $user->toArray(),
+            ]);
+
+            return response()->json(['message' => 'Moderator created successfully'])
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+                ->header('Access-Control-Allow-Credentials', 'true')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        }
+
+        if ($user->role === 'moderator') {
+            return response()->json(['message' => 'User is already a moderator'], 400)
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+                ->header('Access-Control-Allow-Credentials', 'true')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        }
+
+        $oldValues = $user->toArray();
+        $user->update(['role' => 'moderator']);
+
+        Log::create([
+            'user_id' => Auth::id(),
+            'action' => 'updated',
+            'model_type' => 'User',
+            'model_id' => $user->id,
+            'old_values' => $oldValues,
+            'new_values' => $user->toArray(),
+        ]);
+
+        return response()->json(['message' => 'Moderator added successfully'])
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    public function removeModerator($id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->role !== 'moderator') {
+            return response()->json(['message' => 'User is not a moderator'], 400)
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+                ->header('Access-Control-Allow-Credentials', 'true')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        }
+
+        $oldValues = $user->toArray();
+        $user->update(['role' => 'subscriber']); // Default role
+
+        Log::create([
+            'user_id' => Auth::id(),
+            'action' => 'updated',
+            'model_type' => 'User',
+            'model_id' => $user->id,
+            'old_values' => $oldValues,
+            'new_values' => $user->toArray(),
+        ]);
+
+        return response()->json(['message' => 'Moderator removed successfully'])
+            ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
 }

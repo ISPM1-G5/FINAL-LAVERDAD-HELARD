@@ -19,21 +19,13 @@ class RoleMiddleware
     public function handle(Request $request, Closure $next, string $role)
     {
         if (!Auth::guard('sanctum')->check()) {
-            return response()->json(['message' => 'Unauthenticated'], 401)
-                ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
-                ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
         $user = Auth::guard('sanctum')->user();
 
         if (!$user->hasRole($role)) {
-            return response()->json(['message' => 'Unauthorized'], 403)
-                ->header('Access-Control-Allow-Origin', 'http://localhost:5176')
-                ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         return $next($request);

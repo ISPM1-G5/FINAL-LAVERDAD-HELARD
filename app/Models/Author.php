@@ -13,6 +13,7 @@ class Author extends Model
 
     protected $fillable = [
         'user_id',
+        'name',
         'bio',
         'website',
         'social_links',

@@ -10,6 +10,11 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
+    public const ROLE_SUBSCRIBER = 'subscriber';
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_MODERATOR = 'moderator';
+    public const ROLE_AUTHOR = 'author';
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
@@ -67,7 +72,7 @@ class User extends Authenticatable
      */
     public function isModerator(): bool
     {
-        return $this->role === 'moderator';
+        return $this->role === self::ROLE_MODERATOR;
     }
 
     /**
@@ -77,7 +82,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === self::ROLE_ADMIN;
     }
 
     /**
@@ -87,7 +92,7 @@ class User extends Authenticatable
      */
     public function isAuthor(): bool
     {
-        return $this->role === 'author';
+        return $this->role === self::ROLE_AUTHOR;
     }
 
     /**

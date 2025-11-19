@@ -19,39 +19,43 @@ class UserSeeder extends Seeder
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
-                'password' => Hash::make('password123'),
-                'role' => 'subscriber',
+                'password' => Hash::make(env('TEST_USER_PASSWORD', 'password123')),
+                'role' => User::ROLE_SUBSCRIBER,
             ]
         );
 
         // Create an admin user
-        User::firstOrCreate(
+        $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Admin User',
-                'password' => Hash::make('admin123'),
-                'role' => 'admin',
+                'password' => Hash::make(env('ADMIN_PASSWORD', 'admin123')),
+                'role' => User::ROLE_ADMIN,
             ]
         );
+        // Create author record for admin
+        $admin->author()->firstOrCreate(['bio' => 'Administrator bio']);
 
         // Create a moderator user
         User::firstOrCreate(
             ['email' => 'moderator@example.com'],
             [
                 'name' => 'Moderator User',
-                'password' => Hash::make('moderator123'),
-                'role' => 'moderator',
+                'password' => Hash::make(env('MODERATOR_PASSWORD', 'moderator123')),
+                'role' => User::ROLE_MODERATOR,
             ]
         );
 
         // Create an author user
-        User::firstOrCreate(
+        $author = User::firstOrCreate(
             ['email' => 'author@example.com'],
             [
                 'name' => 'Author User',
-                'password' => Hash::make('author123'),
-                'role' => 'author',
+                'password' => Hash::make(env('AUTHOR_PASSWORD', 'author123')),
+                'role' => User::ROLE_AUTHOR,
             ]
         );
+        // Create author record for author
+        $author->author()->firstOrCreate(['bio' => 'Author bio']);
     }
 }

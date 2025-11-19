@@ -27,6 +27,20 @@ class Article extends Model
         'published_at' => 'datetime',
     ];
 
+    protected $appends = ['featured_image_url'];
+    
+    public function getFeaturedImageAttribute($value)
+    {
+        return $value ? url('storage/' . $value) : null;
+    }
+
+    public function getFeaturedImageUrlAttribute()
+    {
+        return $this->attributes['featured_image'] ? url('storage/' . $this->attributes['featured_image']) : null;
+    }
+    
+
+
     public function author(): BelongsTo
     {
         return $this->belongsTo(Author::class);

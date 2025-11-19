@@ -13,10 +13,17 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-        Category::firstOrCreate(['name' => 'Technology'], ['description' => 'Articles about technology']);
-        Category::firstOrCreate(['name' => 'Science'], ['description' => 'Articles about science']);
-        Category::firstOrCreate(['name' => 'Health'], ['description' => 'Articles about health']);
-        Category::firstOrCreate(['name' => 'Business'], ['description' => 'Articles about business']);
-        Category::firstOrCreate(['name' => 'Culture'], ['description' => 'Articles about culture']);
+        Category::firstOrCreate(['name' => 'Technology'], ['slug' => 'technology', 'description' => 'Articles about technology']);
+        Category::firstOrCreate(['name' => 'Science'], ['slug' => 'science', 'description' => 'Articles about science']);
+        Category::firstOrCreate(['name' => 'Health'], ['slug' => 'health', 'description' => 'Articles about health']);
+        Category::firstOrCreate(['name' => 'Business'], ['slug' => 'business', 'description' => 'Articles about business']);
+        Category::firstOrCreate(['name' => 'Culture'], ['slug' => 'culture', 'description' => 'Articles about culture']);
+        Category::firstOrCreate(['name' => 'News'], ['slug' => 'news', 'description' => 'News articles']);
+        Category::firstOrCreate(['name' => 'Sports'], ['slug' => 'sports', 'description' => 'Sports articles']);
+        Category::firstOrCreate(['name' => 'Opinion'], ['slug' => 'opinion', 'description' => 'Opinion pieces']);
+        Category::firstOrCreate(['name' => 'Literary'], ['slug' => 'literary', 'description' => 'Literary works']);
+        Category::firstOrCreate(['name' => 'Features'], ['slug' => 'features', 'description' => 'Feature articles']);
+        Category::firstOrCreate(['name' => 'Specials'], ['slug' => 'specials', 'description' => 'Special reports']);
+        Category::firstOrCreate(['name' => 'Art'], ['slug' => 'art', 'description' => 'Art and culture']);
     }
 }

@@ -27,13 +27,31 @@ class Tag extends Model
 
         static::creating(function ($tag) {
             if (empty($tag->slug)) {
-                $tag->slug = Str::slug($tag->name);
+                $baseSlug = Str::slug($tag->name);
+                $slug = $baseSlug;
+                $counter = 1;
+                
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+                
+                $tag->slug = $slug;
             }
         });
 
         static::updating(function ($tag) {
             if ($tag->isDirty('name') && empty($tag->slug)) {
-                $tag->slug = Str::slug($tag->name);
+                $baseSlug = Str::slug($tag->name);
+                $slug = $baseSlug;
+                $counter = 1;
+                
+                while (static::where('slug', $slug)->where('id', '!=', $tag->id)->exists()) {
+                    $slug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+                
+                $tag->slug = $slug;
             }
         });
     }
