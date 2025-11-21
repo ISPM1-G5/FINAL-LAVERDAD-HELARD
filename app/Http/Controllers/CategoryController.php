@@ -19,6 +19,23 @@ class CategoryController extends Controller
         }
 
         if (request()->wantsJson()) {
+            if ($categories instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+                return response()->json([
+                    'data' => $categories->items(),
+                    'meta' => [
+                        'current_page' => $categories->currentPage(),
+                        'per_page' => $categories->perPage(),
+                        'total' => $categories->total(),
+                        'last_page' => $categories->lastPage(),
+                    ],
+                    'links' => [
+                        'first' => $categories->url(1),
+                        'last' => $categories->url($categories->lastPage()),
+                        'prev' => $categories->previousPageUrl(),
+                        'next' => $categories->nextPageUrl(),
+                    ],
+                ]);
+            }
             return response()->json($categories);
         }
         return view('categories.index', compact('categories'));

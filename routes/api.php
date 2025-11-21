@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\TagController;
@@ -14,11 +15,48 @@ use App\Http\Controllers\UserController;
 use App\Models\Category;
 use App\Models\Article;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContactController;
 
-// Public API Routes
-Route::post('/login', [AuthController::class, 'loginApi']);
-Route::post('/register', [AuthController::class, 'registerApi']);
+// Public API Routes with Rate Limiting
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/login', [AuthController::class, 'loginApi']);
+    Route::post('/register', [AuthController::class, 'registerApi']);
+});
+Route::options('/contact/feedback', function () {
+    return response()->json([])
+        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+        ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type');
+});
+Route::middleware('throttle:10,1')->post('/contact/feedback', [ContactController::class, 'sendFeedback']);
+Route::options('/contact/request-coverage', function () {
+    return response()->json([])
+        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+        ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type');
+});
+Route::middleware('throttle:5,1')->post('/contact/request-coverage', [ContactController::class, 'requestCoverage']);
+Route::options('/contact/join-herald', function () {
+    return response()->json([])
+        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+        ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type');
+});
+Route::middleware('throttle:5,1')->post('/contact/join-herald', [ContactController::class, 'joinHerald']);
+Route::options('/contact/subscribe', function () {
+    return response()->json([])
+        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+        ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type');
+});
+Route::middleware('throttle:10,1')->post('/contact/subscribe', [ContactController::class, 'subscribe']);
 Route::get('/categories', [CategoryController::class, 'index']);
+Route::options('/articles/public', function () {
+    return response()->json([])
+        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+});
 Route::get('/articles/public', [ArticleController::class, 'publicIndex']);
 Route::get('/articles/search', function (Request $request) {
     $query = $request->get('q', '');
@@ -57,6 +95,147 @@ Route::get('/articles/by-slug/{slug}', function ($slug) {
         ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 });
 
+    // Public route to get articles by author id (paginated) and article count
+    Route::get('/articles/author-public/{authorId}', [ArticleController::class, 'getArticlesByAuthorPublic']);
+
+// Public endpoint to fetch article by numeric ID (used by frontend fallback)
+Route::get('/articles/id/{id}', function ($id) {
+    $article = Article::with('author.user', 'categories', 'tags')->find($id);
+    if (!$article) {
+        return response()->json(['error' => 'Article not found'], 404)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    return response()->json($article)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Credentials', 'true')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+});
+
+Route::get('/authors/{authorName}', function ($authorName) {
+    Log::info('Looking for author/user: ' . $authorName);
+
+    // 1) Try to match by user display name first (e.g. "Admin User")
+    $userByName = \App\Models\User::where('name', $authorName)->first();
+    if ($userByName) {
+        $authorIds = \App\Models\Author::where('user_id', $userByName->id)->pluck('id')->toArray();
+        $articles = Article::with('author', 'categories')
+            ->whereIn('author_id', $authorIds)
+            ->latest('created_at')
+            ->get();
+
+        $formattedArticles = $articles->map(function ($article) {
+            return [
+                'id' => $article->id,
+                'title' => $article->title,
+                'content' => $article->content,
+                'excerpt' => $article->excerpt,
+                'image_url' => $article->featured_image_url,
+                'category' => $article->categories->first()?->name ?? 'Uncategorized',
+                'author' => $article->author->name,
+                'created_at' => $article->created_at,
+                'slug' => $article->slug,
+                'status' => $article->status
+            ];
+        });
+
+        return response()->json([
+            'author' => [
+                'name' => $userByName->name,
+                'articleCount' => $formattedArticles->count()
+            ],
+            'articles' => $formattedArticles
+        ])
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    // 2) Try to match by user email
+    $user = \App\Models\User::where('email', $authorName)->first();
+    if ($user) {
+        $authorIds = \App\Models\Author::where('user_id', $user->id)->pluck('id')->toArray();
+        $articles = Article::with('author', 'categories')
+            ->whereIn('author_id', $authorIds)
+            ->latest('created_at')
+            ->get();
+
+        $formattedArticles = $articles->map(function ($article) {
+            return [
+                'id' => $article->id,
+                'title' => $article->title,
+                'content' => $article->content,
+                'excerpt' => $article->excerpt,
+                'image_url' => $article->featured_image_url,
+                'category' => $article->categories->first()?->name ?? 'Uncategorized',
+                'author' => $article->author->name,
+                'created_at' => $article->created_at,
+                'slug' => $article->slug,
+                'status' => $article->status
+            ];
+        });
+
+        return response()->json([
+            'author' => [
+                'name' => $user->name,
+                'articleCount' => $formattedArticles->count()
+            ],
+            'articles' => $formattedArticles
+        ])
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    // 3) Finally, try to match the author record by its name
+    $author = \App\Models\Author::where('name', $authorName)->first();
+    if (!$author) {
+        return response()->json(['error' => 'Author not found'], 404)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    $articles = Article::with('author', 'categories')
+        ->where('author_id', $author->id)
+        ->latest('created_at')
+        ->get();
+
+    $formattedArticles = $articles->map(function ($article) {
+        return [
+            'id' => $article->id,
+            'title' => $article->title,
+            'content' => $article->content,
+            'excerpt' => $article->excerpt,
+            'image_url' => $article->featured_image_url,
+            'category' => $article->categories->first()?->name ?? 'Uncategorized',
+            'author' => $article->author->name,
+            'created_at' => $article->created_at,
+            'slug' => $article->slug,
+            'status' => $article->status
+        ];
+    });
+
+    return response()->json([
+        'author' => [
+            'name' => $author->name,
+            'articleCount' => $formattedArticles->count()
+        ],
+        'articles' => $formattedArticles
+    ])
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Credentials', 'true')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+});
+
 // Protected article routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/articles', [ArticleController::class, 'index']);
@@ -64,8 +243,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/articles/{article}', [ArticleController::class, 'show']);
     Route::put('/articles/{article}', [ArticleController::class, 'update']);
     Route::delete('/articles/{article}', [ArticleController::class, 'destroy']);
+    Route::post('/articles/{article}/like', [ArticleController::class, 'like']);
+    Route::get('/articles/author/{authorId}', [ArticleController::class, 'getArticlesByAuthor']);
 });
 
+Route::options('/latest-articles', function () {
+    return response()->json([])
+        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+});
 Route::get('/latest-articles', function () {
     $articles = Article::published()
         ->with('author.user', 'categories')
@@ -94,6 +281,12 @@ Route::get('/debug-articles', function () {
         'drafts_only' => $draftArticles
     ]);
 });
+
+// One-off route to merge duplicate authors for a given user.
+// This is intended for local/dev use only. It will reassign articles from
+// the duplicate author IDs to the chosen canonical author ID and then
+// delete the duplicate author rows.
+// (route removed) merge performed
 
 Route::get('/test-drafts', function () {
     $draftArticles = Article::draft()->with('author.user', 'categories')->get();
@@ -191,30 +384,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/logs', [LogController::class, 'index']);
     Route::get('/logs/{log}', [LogController::class, 'show']);
 
-    // Admin API Routes
-    Route::middleware(['role:admin'])->group(function () {
-
-        Route::get('/admin/check-access', function (Request $request) {
-            return response()->json(['is_admin' => $request->user()->isAdmin()])
-                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
-                ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-        });
-
+    // Admin & Moderator shared routes
+    Route::middleware(['role:admin,moderator'])->group(function () {
         Route::get('/admin/dashboard-stats', function (Request $request) {
             $users = \App\Models\User::count();
             $articles = \App\Models\Article::where('status', 'published')->count();
             $drafts = \App\Models\Article::where('status', 'draft')->count();
-            $views = \App\Models\ArticleInteraction::where('type', 'view')
-                ->whereNotNull('user_id')
-                ->count();
+            $views = \App\Models\ArticleInteraction::where('type', 'shared')->count();
+            $likes = \App\Models\ArticleInteraction::where('type', 'liked')->count();
 
             return response()->json([
                 'users' => $users,
                 'articles' => $articles,
                 'drafts' => $drafts,
-                'views' => $views
+                'views' => $views,
+                'likes' => $likes
             ])
                 ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
                 ->header('Access-Control-Allow-Credentials', 'true')
@@ -247,6 +431,39 @@ Route::middleware('auth:sanctum')->group(function () {
                 ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
         });
 
+        Route::get('/admin/audit-logs', function (Request $request) {
+            $logs = \App\Models\Log::with('user')
+                ->orderBy('created_at', 'desc')
+                ->take(50)
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'action' => $log->action,
+                        'article_title' => $log->model_type === 'App\\Models\\Article' ? \App\Models\Article::find($log->model_id)?->title : null,
+                        'user_email' => $log->user?->email,
+                        'created_at' => $log->created_at,
+                    ];
+                });
+
+            return response()->json($logs)
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+                ->header('Access-Control-Allow-Credentials', 'true')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        });
+    });
+
+    // Admin-only routes
+    Route::middleware(['role:admin'])->group(function () {
+
+        Route::get('/admin/check-access', function (Request $request) {
+            return response()->json(['is_admin' => $request->user()->isAdmin()])
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+                ->header('Access-Control-Allow-Credentials', 'true')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        });
+
         Route::post('/admin/reset-data', function (Request $request) {
             \App\Models\Article::truncate();
             \App\Models\ArticleInteraction::truncate();
@@ -263,7 +480,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/stats', function (Request $request) {
             $totalArticles = \App\Models\Article::count();
             $totalUsers = \App\Models\User::count();
-            $totalViews = \App\Models\ArticleInteraction::where('interaction_type', 'view')->count();
+            $totalViews = \App\Models\ArticleInteraction::where('type', 'shared')->count();
             $recentArticles = \App\Models\Article::with('author.user', 'categories')
                 ->latest('published_at')
                 ->take(5)
@@ -275,27 +492,6 @@ Route::middleware('auth:sanctum')->group(function () {
                 'totalViews' => $totalViews,
                 'recentArticles' => $recentArticles
             ])
-                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
-                ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-        });
-
-        Route::get('/admin/audit-logs', function (Request $request) {
-            $logs = \App\Models\Log::with('user')
-                ->orderBy('created_at', 'desc')
-                ->take(50)
-                ->get()
-                ->map(function ($log) {
-                    return [
-                        'action' => $log->action,
-                        'article_title' => $log->model_type === 'App\\Models\\Article' ? \App\Models\Article::find($log->model_id)?->title : null,
-                        'user_email' => $log->user?->email,
-                        'created_at' => $log->created_at,
-                    ];
-                });
-
-            return response()->json($logs)
                 ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
                 ->header('Access-Control-Allow-Credentials', 'true')
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -322,3 +518,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('drafts', DraftController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
     });
 });
+

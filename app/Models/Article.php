@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class Article extends Model
 {
@@ -27,16 +28,38 @@ class Article extends Model
         'published_at' => 'datetime',
     ];
 
-    protected $appends = ['featured_image_url'];
+    protected $appends = ['featured_image_url', 'is_liked', 'likes_count'];
     
+    public function getLikesCountAttribute()
+    {
+        return $this->interactions()->where('type', 'liked')->count();
+    }
+
+    public function getIsLikedAttribute()
+    {
+        if (Auth::check()) {
+            return $this->interactions()->where('user_id', Auth::id())->where('type', 'liked')->exists();
+        }
+        return false;
+    }
+
     public function getFeaturedImageAttribute($value)
     {
-        return $value ? url('storage/' . $value) : null;
+        if ($value) {
+            return 'http://localhost:8000/storage/' . $value;
+        }
+        return null;
     }
 
     public function getFeaturedImageUrlAttribute()
     {
-        return $this->attributes['featured_image'] ? url('storage/' . $this->attributes['featured_image']) : null;
+        if (isset($this->attributes['featured_image']) && $this->attributes['featured_image']) {
+            if (config('app.env') === 'local') {
+                return 'http://localhost:8000/storage/' . $this->attributes['featured_image'];
+            }
+            return url('storage/' . $this->attributes['featured_image']);
+        }
+        return null;
     }
     
 

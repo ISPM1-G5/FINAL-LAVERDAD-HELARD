@@ -19,11 +19,18 @@ class ArticlePolicy
      */
     public function update(User $user, Article $article)
     {
+        // Admins can update any article
         if ($user->isAdmin()) {
             return true;
         }
 
-        if ($user->isModerator() && $article->author->user_id === $user->id) {
+        // Moderators can update any article
+        if ($user->isModerator()) {
+            return true;
+        }
+
+        // Authors can update their own articles
+        if ($user->isAuthor() && $article->author && $article->author->user_id === $user->id) {
             return true;
         }
 

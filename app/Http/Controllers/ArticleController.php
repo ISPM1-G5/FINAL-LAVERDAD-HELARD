@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\Tag;
-use App\Models\Log;
 use App\Models\ArticleInteraction;
 use App\Models\Author;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ArticleController extends Controller
@@ -52,9 +52,17 @@ class ArticleController extends Controller
         return view('articles.index', compact('articles'));
     }
 
-    public function publicIndex()
+    public function publicIndex(Request $request)
     {
-        $articles = Article::published()->with('author.user', 'categories', 'tags')->paginate(10);
+        $limit = $request->get('limit', 10);
+        $articles = Article::published()->with('author.user', 'categories', 'tags')->latest('published_at')->paginate($limit);
+        
+        if (request()->wantsJson()) {
+            return response()->json($articles)
+                ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        }
         return view('articles.index', compact('articles'));
     }
 
@@ -67,41 +75,30 @@ class ArticleController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string|min:1',
-            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'category' => 'required|string',
-            'tags' => 'required|string|min:1',
+            'content' => 'required|string',
+            'category_id' => 'required|exists:categories,id',
+            'tags' => 'array',
+            'tags.*' => 'string',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'author_name' => 'required|string|exists:authors,name',
         ]);
-
-        // Additional validation for trimmed values
-        if (empty(trim($request->title))) {
-            return response()->json(['error' => 'Title cannot be empty or contain only whitespace.'], 422);
-        }
-        if (empty(trim($request->input('content')))) {
-            return response()->json(['error' => 'Content cannot be empty or contain only whitespace.'], 422);
-        }
-        if (empty(trim($request->tags))) {
-            return response()->json(['error' => 'Tags cannot be empty or contain only whitespace.'], 422);
-        }
 
         // Admin creates articles and assigns to authors
         $user = Auth::user();
         if (!$user || !$user->isAdmin()) {
             return response()->json(['error' => 'Admin access required'], 403);
         }
-        
-        // Use authenticated user as author
-        $author = Author::where('user_id', $user->id)->first();
-        if (!$author) {
-            $author = Author::create([
-                'name' => $user->name,
-                'user_id' => $user->id,
-            ]);
+
+        $author = Author::where('name', $validated['author_name'])->first();
+
+        $imagePath = null;
+        if ($request->hasFile('featured_image')) {
+            $imagePath = $request->file('featured_image')->store('articles', 'public');
         }
 
-        $baseSlug = Str::slug($request->title);
+        $baseSlug = Str::slug($validated['title']);
         $slug = $baseSlug;
         $counter = 1;
         
@@ -111,45 +108,26 @@ class ArticleController extends Controller
         }
 
         $status = $request->get('status', 'published');
-        $articleData = [
-            'title' => $request->title,
+        $article = Article::create([
+            'title' => $validated['title'],
             'slug' => $slug,
-            'content' => $request->input('content'),
+            'content' => $validated['content'],
             'author_id' => $author->id,
             'status' => $status,
             'published_at' => $status === 'published' ? now() : null,
-            'excerpt' => Str::limit($request->input('content'), 150),
-        ];
+            'excerpt' => Str::limit($validated['content'], 150),
+            'featured_image' => $imagePath,
+        ]);
 
-        if ($request->hasFile('featured_image')) {
-            $articleData['featured_image'] = $request->file('featured_image')->store('articles', 'public');
-        }
+        $article->categories()->attach($validated['category_id']);
 
-        $article = Article::create($articleData);
-
-        if ($request->category) {
-            $category = Category::firstOrCreate(['name' => $request->category]);
-            $article->categories()->attach($category->id);
-        }
-
-        if ($request->tags) {
-            $tags = explode(',', $request->tags);
+        if (!empty($validated['tags'])) {
             $tagIds = [];
-            foreach ($tags as $tagName) {
+            foreach ($validated['tags'] as $tagName) {
                 $tag = Tag::firstOrCreate(['name' => trim($tagName)]);
                 $tagIds[] = $tag->id;
             }
-            $article->tags()->attach($tagIds);
-        }
-
-        if (Auth::id()) {
-            Log::create([
-                'user_id' => Auth::id(),
-                'action' => 'created',
-                'model_type' => 'Article',
-                'model_id' => $article->id,
-                'new_values' => $article->toArray(),
-            ]);
+            $article->tags()->sync($tagIds);
         }
 
         return response()->json($article->load('author.user', 'categories', 'tags'), 201)
@@ -161,14 +139,24 @@ class ArticleController extends Controller
 
     public function show(Article $article)
     {
-        if (request()->wantsJson()) {
-            return response()->json($article->load('author.user', 'categories', 'tags'))
+        try {
+            if (request()->wantsJson()) {
+                $article->load('author.user', 'categories', 'tags');
+                return response()->json($article)
+                    ->header('Access-Control-Allow-Origin', '*')
+                    ->header('Access-Control-Allow-Credentials', 'true')
+                    ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                    ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            }
+            return view('articles.show', compact('article'));
+        } catch (\Exception $e) {
+            Log::error('Error in ArticleController@show: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load article: ' . $e->getMessage()], 500)
                 ->header('Access-Control-Allow-Origin', '*')
                 ->header('Access-Control-Allow-Credentials', 'true')
                 ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
                 ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
         }
-        return view('articles.show', compact('article'));
     }
 
     // Public-facing: show published article by slug
@@ -206,25 +194,17 @@ class ArticleController extends Controller
             'content' => 'required|string',
             'category' => 'required|string',
             'tags' => 'required|string',
-            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'author' => 'required|string|min:1',
         ]);
 
         $oldValues = $article->toArray();
 
-        // Admin updates articles and assigns to authors
-        $user = Auth::user();
-        if (!$user || !$user->isAdmin()) {
-            return response()->json(['error' => 'Admin access required'], 403);
-        }
-        
-        // Use authenticated user as author
-        $author = Author::where('user_id', $user->id)->first();
-        if (!$author) {
-            $author = Author::create([
-                'name' => $user->name,
-                'user_id' => $user->id,
-            ]);
-        }
+        // Authorize using policy (admins and moderators may update per policy)
+        $this->authorize('update', $article);
+
+        // Find or create author by name
+        $author = Author::firstOrCreate(['name' => $request->author], ['user_id' => Auth::id()]);
 
         // Keep the original slug to maintain URL consistency
         $slug = $article->slug;
@@ -232,10 +212,10 @@ class ArticleController extends Controller
         // Update article data
         $data = [
             'title' => $request->title,
-            'content' => $request->content,
+            'content' => $request->input('content'),
             'author_id' => $author->id,
             'slug' => $slug,
-            'excerpt' => Str::limit($request->content, 150),
+            'excerpt' => Str::limit($request->input('content'), 150),
         ];
         
         // Handle status update
@@ -269,6 +249,8 @@ class ArticleController extends Controller
             $article->tags()->sync($tagIds);
         }
 
+        // Logging removed as Log model is not available
+
         return response()->json($article->load('author.user', 'categories', 'tags'))
             ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
             ->header('Access-Control-Allow-Credentials', 'true')
@@ -279,6 +261,9 @@ class ArticleController extends Controller
     public function destroy(Article $article)
     {
         try {
+            // Ensure user is authorized to delete (policy allows only admins)
+            $this->authorize('delete', $article);
+
             $oldValues = $article->toArray();
 
             $article->delete();
@@ -306,7 +291,7 @@ class ArticleController extends Controller
 
         if ($existing) {
             $existing->delete();
-            return back()->with('success', 'Article unliked.');
+            return response()->json(['liked' => false, 'likes_count' => $article->interactions()->where('type', 'liked')->count()]);
         }
 
         ArticleInteraction::create([
@@ -315,7 +300,7 @@ class ArticleController extends Controller
             'type' => 'liked',
         ]);
 
-        return back()->with('success', 'Article liked!');
+        return response()->json(['liked' => true, 'likes_count' => $article->interactions()->where('type', 'liked')->count()]);
     }
 
     public function share(Article $article)
@@ -364,6 +349,78 @@ class ArticleController extends Controller
         ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json($articles)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    public function getArticlesByAuthor(Request $request, $authorId)
+    {
+        $author = Author::find($authorId);
+        if (!$author) {
+            return response()->json(['error' => 'Author not found'], 404);
+        }
+
+        $query = Article::where('author_id', $authorId)->with('author.user', 'categories', 'tags');
+
+        // Filter by status if provided
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        } else {
+            $query->published();
+        }
+
+        $query->latest('published_at');
+
+        $perPage = $request->get('per_page', 10);
+        $page = $request->get('page', 1);
+        $articles = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Add article count to response
+        $articleCount = Article::where('author_id', $authorId)->count();
+
+        return response()->json([
+            'articles' => $articles,
+            'article_count' => $articleCount,
+            'author' => $author->load('user')
+        ])
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    // Public version of getArticlesByAuthor (no auth required)
+    public function getArticlesByAuthorPublic(Request $request, $authorId)
+    {
+        $author = Author::find($authorId);
+        if (!$author) {
+            return response()->json(['error' => 'Author not found'], 404);
+        }
+
+        $query = Article::where('author_id', $authorId)->with('author.user', 'categories', 'tags');
+
+        // Default to published only unless status specified
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        } else {
+            $query->published();
+        }
+
+        $query->latest('published_at');
+
+        $perPage = $request->get('per_page', 10);
+        $page = $request->get('page', 1);
+        $articles = $query->paginate($perPage, ['*'], 'page', $page);
+
+        $articleCount = Article::where('author_id', $authorId)->count();
+
+        return response()->json([
+            'articles' => $articles,
+            'article_count' => $articleCount,
+            'author' => $author->load('user')
+        ])
             ->header('Access-Control-Allow-Origin', '*')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')

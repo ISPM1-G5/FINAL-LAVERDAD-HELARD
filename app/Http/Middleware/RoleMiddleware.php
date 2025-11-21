@@ -16,7 +16,7 @@ class RoleMiddleware
      * @param  string  $role
      * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
-    public function handle(Request $request, Closure $next, string $role)
+    public function handle(Request $request, Closure $next, string ...$roles)
     {
         if (!Auth::guard('sanctum')->check()) {
             return response()->json(['message' => 'Unauthenticated'], 401);
@@ -24,10 +24,12 @@ class RoleMiddleware
 
         $user = Auth::guard('sanctum')->user();
 
-        if (!$user->hasRole($role)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        foreach ($roles as $role) {
+            if ($user->hasRole($role)) {
+                return $next($request);
+            }
         }
 
-        return $next($request);
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
 }

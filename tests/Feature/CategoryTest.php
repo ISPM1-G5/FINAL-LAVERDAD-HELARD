@@ -83,4 +83,24 @@ class CategoryTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors('name');
     }
+
+    /**
+     * Test that categories are paginated.
+     *
+     * @return void
+     */
+    public function test_categories_are_paginated()
+    {
+        // Arrange
+        $user = User::factory()->create();
+        Category::factory()->count(20)->create();
+
+        // Act
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/categories?page=2');
+
+        // Assert
+        $response->assertStatus(200);
+        $response->assertJsonCount(10, 'data');
+        $response->assertJsonPath('meta.current_page', 2);
+    }
 }
