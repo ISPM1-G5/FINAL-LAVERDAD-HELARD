@@ -16,12 +16,34 @@ use App\Models\Category;
 use App\Models\Article;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\TeamMemberController;
+
+// Team Members Routes
+Route::get('/team-members', [TeamMemberController::class, 'index']);
+Route::middleware('auth:sanctum')->post('/team-members/update', [TeamMemberController::class, 'update']);
 
 // Public API Routes with Rate Limiting
 Route::middleware('throttle:5,1')->group(function () {
     Route::post('/login', [AuthController::class, 'loginApi']);
     Route::post('/register', [AuthController::class, 'registerApi']);
 });
+
+// Email Verification Routes
+Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
+    $user = \App\Models\User::findOrFail($id);
+    
+    if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        return response()->json(['message' => 'Invalid verification link'], 403);
+    }
+    
+    if ($user->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Email already verified'], 200);
+    }
+    
+    $user->markEmailAsVerified();
+    
+    return response()->json(['message' => 'Email verified successfully! You can now log in.'], 200);
+})->name('verification.verify');
 Route::options('/contact/feedback', function () {
     return response()->json([])
         ->header('Access-Control-Allow-Origin', 'http://localhost:5173')

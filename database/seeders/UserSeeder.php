@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'password' => Hash::make(env('TEST_USER_PASSWORD', 'password123')),
-                'role' => User::ROLE_SUBSCRIBER,
+                'role' => User::ROLE_USER,
             ]
         );
 
@@ -45,17 +45,5 @@ class UserSeeder extends Seeder
                 'role' => User::ROLE_MODERATOR,
             ]
         );
-
-        // Create an author user
-        $author = User::firstOrCreate(
-            ['email' => 'author@example.com'],
-            [
-                'name' => 'Author User',
-                'password' => Hash::make(env('AUTHOR_PASSWORD', 'author123')),
-                'role' => User::ROLE_AUTHOR,
-            ]
-        );
-        // Create author record for author
-        $author->author()->firstOrCreate(['bio' => 'Author bio']);
     }
 }

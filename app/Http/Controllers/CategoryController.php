@@ -12,7 +12,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        if (auth()->check()) {
+        if (Auth::check()) {
             $categories = Category::paginate(10);
         } else {
             $categories = Category::orderBy('name')->get();

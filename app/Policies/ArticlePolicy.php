@@ -29,8 +29,8 @@ class ArticlePolicy
             return true;
         }
 
-        // Authors can update their own articles
-        if ($user->isAuthor() && $article->author && $article->author->user_id === $user->id) {
+        // Users with author records can update their own articles
+        if ($article->author && $article->author->user_id === $user->id) {
             return true;
         }
 

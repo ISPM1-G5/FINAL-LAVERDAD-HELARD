@@ -42,6 +42,17 @@ class AuthController extends Controller
 
         if (Auth::attempt($request->only('email', 'password'))) {
             $user = Auth::user();
+            
+            // Email verification disabled until Brevo SMTP is configured
+            // if (is_null($user->email_verified_at)) {
+            //     Auth::logout();
+            //     return response()->json(['message' => 'Please verify your email before logging in'], 403)
+            //        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+            //       ->header('Access-Control-Allow-Credentials', 'true')
+            //     ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            //        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+            // }
+            
             $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json(['token' => $token, 'role' => $user->role, 'user' => $user])
@@ -76,7 +87,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'subscriber',
+            'role' => 'user',
         ]);
 
 
@@ -97,10 +108,14 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'subscriber',
+            'role' => 'user',
+            'email_verified_at' => now(), // Auto-verify until Brevo is configured
         ]);
 
-        return response()->json(['message' => 'Registration successful'], 201)
+        // TODO: Send verification email once Brevo SMTP is properly configured
+        // $user->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'Registration successful. You can now log in.'], 201)
             ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
             ->header('Access-Control-Allow-Credentials', 'true')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -181,12 +196,10 @@ class AuthController extends Controller
         // Delete article interactions
         \App\Models\ArticleInteraction::where('user_id', $user->id)->delete();
 
-        // If user has author role, delete their articles and drafts
-        if ($user->role === 'author') {
-            $author = \App\Models\Author::where('user_id', $user->id)->first();
-            if ($author) {
-                \App\Models\Article::where('author_id', $author->id)->delete();
-            }
+        // If user is an author, delete their articles and drafts
+        $author = \App\Models\Author::where('user_id', $user->id)->first();
+        if ($author) {
+            \App\Models\Article::where('author_id', $author->id)->delete();
         }
 
         // Delete the user

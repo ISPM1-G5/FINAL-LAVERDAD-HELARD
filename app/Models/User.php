@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    public const ROLE_SUBSCRIBER = 'subscriber';
+    public const ROLE_USER = 'user';
     public const ROLE_ADMIN = 'admin';
     public const ROLE_MODERATOR = 'moderator';
-    public const ROLE_AUTHOR = 'author';
+  
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
@@ -83,16 +83,6 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
-    }
-
-    /**
-     * Check if the user is an author.
-     *
-     * @return bool
-     */
-    public function isAuthor(): bool
-    {
-        return $this->role === self::ROLE_AUTHOR;
     }
 
     /**

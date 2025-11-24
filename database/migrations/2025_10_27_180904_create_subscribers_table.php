@@ -8,6 +8,9 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * Note: This table is for email newsletter subscriptions only.
+     * Users who subscribe will receive email notifications.
+     * This is separate from the user role system.
      */
     public function up(): void
     {

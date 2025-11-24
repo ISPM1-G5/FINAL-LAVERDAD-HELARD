@@ -10,11 +10,15 @@ return new class extends Migration
     {
         // Add indexes for performance and security
         Schema::table('users', function (Blueprint $table) {
-            $table->index('email');
-            $table->index('role');
-            $table->timestamp('password_changed_at')->nullable()->after('password');
-            $table->timestamp('last_login_at')->nullable()->after('password_changed_at');
-            $table->string('last_login_ip')->nullable()->after('last_login_at');
+            if (!Schema::hasColumn('users', 'password_changed_at')) {
+                $table->timestamp('password_changed_at')->nullable()->after('password');
+            }
+            if (!Schema::hasColumn('users', 'last_login_at')) {
+                $table->timestamp('last_login_at')->nullable()->after('password_changed_at');
+            }
+            if (!Schema::hasColumn('users', 'last_login_ip')) {
+                $table->string('last_login_ip')->nullable()->after('last_login_at');
+            }
         });
 
         Schema::table('articles', function (Blueprint $table) {
@@ -75,7 +79,6 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropIndex(['email']);
-            $table->dropIndex(['role']);
             $table->dropColumn(['password_changed_at', 'last_login_at', 'last_login_ip']);
         });
 

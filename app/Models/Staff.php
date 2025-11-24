@@ -31,9 +31,4 @@ class Staff extends Model
     {
         return $this->role === 'moderator';
     }
-
-    public function isEditor(): bool
-    {
-        return $this->role === 'editor';
-    }
 }
