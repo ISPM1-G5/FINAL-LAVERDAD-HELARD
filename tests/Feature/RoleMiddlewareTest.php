@@ -20,8 +20,7 @@ class RoleMiddlewareTest extends TestCase
         // Arrange
         $admin = User::factory()->create(['role' => 'admin']);
         $moderator = User::factory()->create(['role' => 'moderator']);
-        $author = User::factory()->create(['role' => 'author']);
-        $subscriber = User::factory()->create(['role' => 'subscriber']);
+        $user = User::factory()->create(['role' => 'user']);
 
         // Assert
         $this->assertTrue($admin->hasRole('admin'));
@@ -30,10 +29,7 @@ class RoleMiddlewareTest extends TestCase
         $this->assertTrue($moderator->hasRole('moderator'));
         $this->assertFalse($moderator->hasRole('admin'));
 
-        $this->assertTrue($author->hasRole('author'));
-        $this->assertFalse($author->hasRole('admin'));
-
-        $this->assertTrue($subscriber->hasRole('subscriber'));
-        $this->assertFalse($subscriber->hasRole('admin'));
+        $this->assertTrue($user->hasRole('user'));
+        $this->assertFalse($user->hasRole('admin'));
     }
 }
