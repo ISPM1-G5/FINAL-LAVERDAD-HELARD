@@ -39,7 +39,7 @@ class AuthorController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        Author::create([
+        $author = Author::create([
             'user_id' => $user->id,
             'bio' => $request->bio,
             'website' => $request->website,
@@ -50,7 +50,7 @@ class AuthorController extends Controller
             'user_id' => Auth::id(),
             'action' => 'created',
             'model_type' => 'Author',
-            'model_id' => $user->id,
+            'model_id' => $author->id,
             'new_values' => $request->all(),
         ]);
 

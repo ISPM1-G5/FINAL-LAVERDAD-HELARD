@@ -13,11 +13,17 @@ class Author extends Model
 
     protected $fillable = [
         'user_id',
-        'name',
         'bio',
         'website',
         'social_links',
     ];
+
+    protected $appends = ['name'];
+
+    public function getNameAttribute()
+    {
+        return $this->user?->name;
+    }
 
     protected $casts = [
         'social_links' => 'array',

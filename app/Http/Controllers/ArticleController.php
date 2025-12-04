@@ -82,7 +82,7 @@ class ArticleController extends Controller
             'tags' => 'array',
             'tags.*' => 'string',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
-            'author_name' => 'required|string|exists:authors,name',
+            'author_name' => 'required|string',
         ]);
 
         // Admin creates articles and assigns to authors
@@ -91,7 +91,16 @@ class ArticleController extends Controller
             return response()->json(['error' => 'Admin access required'], 403);
         }
 
-        $author = Author::where('name', $validated['author_name'])->first();
+        // Find user by name, then get their author profile
+        $authorUser = User::where('name', $validated['author_name'])->first();
+        if (!$authorUser) {
+            return response()->json(['error' => 'Author user not found'], 404);
+        }
+        
+        $author = Author::where('user_id', $authorUser->id)->first();
+        if (!$author) {
+            return response()->json(['error' => 'Author profile not found'], 404);
+        }
 
         $imagePath = null;
         if ($request->hasFile('featured_image')) {
@@ -203,8 +212,16 @@ class ArticleController extends Controller
         // Authorize using policy (admins and moderators may update per policy)
         $this->authorize('update', $article);
 
-        // Find or create author by name
-        $author = Author::firstOrCreate(['name' => $request->author], ['user_id' => Auth::id()]);
+        // Find user by name, then get their author profile
+        $authorUser = User::where('name', $request->author)->first();
+        if (!$authorUser) {
+            return response()->json(['error' => 'Author user not found'], 404);
+        }
+        
+        $author = Author::where('user_id', $authorUser->id)->first();
+        if (!$author) {
+            return response()->json(['error' => 'Author profile not found'], 404);
+        }
 
         // Keep the original slug to maintain URL consistency
         $slug = $article->slug;

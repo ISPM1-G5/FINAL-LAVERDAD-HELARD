@@ -120,6 +120,24 @@ Route::get('/articles/by-slug/{slug}', function ($slug) {
     // Public route to get articles by author id (paginated) and article count
     Route::get('/articles/author-public/{authorId}', [ArticleController::class, 'getArticlesByAuthorPublic']);
 
+// Get all authors with their user names
+Route::get('/authors', function () {
+    $authors = \App\Models\Author::with('user:id,name,email')->get()->map(function($author) {
+        return [
+            'id' => $author->id,
+            'name' => $author->name,
+            'user_id' => $author->user_id,
+            'bio' => $author->bio,
+            'website' => $author->website,
+        ];
+    });
+    return response()->json($authors)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Credentials', 'true')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+});
+
 // Public endpoint to fetch article by numeric ID (used by frontend fallback)
 Route::get('/articles/id/{id}', function ($id) {
     $article = Article::with('author.user', 'categories', 'tags')->find($id);
@@ -141,83 +159,11 @@ Route::get('/articles/id/{id}', function ($id) {
 Route::get('/authors/{authorName}', function ($authorName) {
     Log::info('Looking for author/user: ' . $authorName);
 
-    // 1) Try to match by user display name first (e.g. "Admin User")
-    $userByName = \App\Models\User::where('name', $authorName)->first();
-    if ($userByName) {
-        $authorIds = \App\Models\Author::where('user_id', $userByName->id)->pluck('id')->toArray();
-        $articles = Article::with('author', 'categories')
-            ->whereIn('author_id', $authorIds)
-            ->latest('created_at')
-            ->get();
+    $user = \App\Models\User::where('name', $authorName)
+        ->orWhere('email', $authorName)
+        ->first();
 
-        $formattedArticles = $articles->map(function ($article) {
-            return [
-                'id' => $article->id,
-                'title' => $article->title,
-                'content' => $article->content,
-                'excerpt' => $article->excerpt,
-                'image_url' => $article->featured_image_url,
-                'category' => $article->categories->first()?->name ?? 'Uncategorized',
-                'author' => $article->author->name,
-                'created_at' => $article->created_at,
-                'slug' => $article->slug,
-                'status' => $article->status
-            ];
-        });
-
-        return response()->json([
-            'author' => [
-                'name' => $userByName->name,
-                'articleCount' => $formattedArticles->count()
-            ],
-            'articles' => $formattedArticles
-        ])
-            ->header('Access-Control-Allow-Origin', '*')
-            ->header('Access-Control-Allow-Credentials', 'true')
-            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    }
-
-    // 2) Try to match by user email
-    $user = \App\Models\User::where('email', $authorName)->first();
-    if ($user) {
-        $authorIds = \App\Models\Author::where('user_id', $user->id)->pluck('id')->toArray();
-        $articles = Article::with('author', 'categories')
-            ->whereIn('author_id', $authorIds)
-            ->latest('created_at')
-            ->get();
-
-        $formattedArticles = $articles->map(function ($article) {
-            return [
-                'id' => $article->id,
-                'title' => $article->title,
-                'content' => $article->content,
-                'excerpt' => $article->excerpt,
-                'image_url' => $article->featured_image_url,
-                'category' => $article->categories->first()?->name ?? 'Uncategorized',
-                'author' => $article->author->name,
-                'created_at' => $article->created_at,
-                'slug' => $article->slug,
-                'status' => $article->status
-            ];
-        });
-
-        return response()->json([
-            'author' => [
-                'name' => $user->name,
-                'articleCount' => $formattedArticles->count()
-            ],
-            'articles' => $formattedArticles
-        ])
-            ->header('Access-Control-Allow-Origin', '*')
-            ->header('Access-Control-Allow-Credentials', 'true')
-            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    }
-
-    // 3) Finally, try to match the author record by its name
-    $author = \App\Models\Author::where('name', $authorName)->first();
-    if (!$author) {
+    if (!$user) {
         return response()->json(['error' => 'Author not found'], 404)
             ->header('Access-Control-Allow-Origin', '*')
             ->header('Access-Control-Allow-Credentials', 'true')
@@ -225,7 +171,16 @@ Route::get('/authors/{authorName}', function ($authorName) {
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
-    $articles = Article::with('author', 'categories')
+    $author = \App\Models\Author::where('user_id', $user->id)->first();
+    if (!$author) {
+        return response()->json(['error' => 'Author profile not found'], 404)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Credentials', 'true')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    }
+
+    $articles = Article::with('author.user', 'categories')
         ->where('author_id', $author->id)
         ->latest('created_at')
         ->get();
@@ -247,7 +202,7 @@ Route::get('/authors/{authorName}', function ($authorName) {
 
     return response()->json([
         'author' => [
-            'name' => $author->name,
+            'name' => $user->name,
             'articleCount' => $formattedArticles->count()
         ],
         'articles' => $formattedArticles
